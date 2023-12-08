@@ -1,8 +1,8 @@
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
-import ru.stepup.task.Account;
-import ru.stepup.task.Currency;
-import ru.stepup.task.Save;
+import ru.stepup.task.*;
+
+import java.util.HashMap;
 
 public class Test {
     @org.junit.jupiter.api.Test
@@ -44,7 +44,6 @@ public class Test {
         String str = acc.getName();
         acc.setName("Vasia");
         acc = acc.undo();
-        System.out.println(acc);
         Assertions.assertTrue(acc.getName().equals(str));
 
     }
@@ -52,7 +51,6 @@ public class Test {
     @DisplayName("Проверка undo, если отменять нечего")
     public void  testUndoInc(){
         Account acc = new Account("Vasia");;
-        System.out.println(acc);
         Assertions.assertThrows(IndexOutOfBoundsException.class, () -> acc.undo());
     }
     @org.junit.jupiter.api.Test
@@ -86,6 +84,36 @@ public class Test {
         acc.setCurrency(currr, 888);
         Assertions.assertFalse(Boolean.parseBoolean(tmp), acc.getName());
 
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("Проверка UtilsCash на корректность")
+    public void  testUtilsCash(){
+        Getable acc = UtilsCashe.casheU(new Account("Vasia"));
+        acc.getName();
+        acc.setName("Dima");
+        String tmp = acc.getName();
+        Assertions.assertEquals(tmp, acc.getName());
+
+    }
+    @org.junit.jupiter.api.Test
+    @DisplayName("Проверка UtilsCash на корректность кеша")
+    public void  testUtilsCashEq(){
+        Getable acc = UtilsCashe.casheU(new Account("Vasia"));
+        Currency currr = new Currency();
+        acc.setCurrency(currr, 100);
+        currr.setCurCurrency(2);
+        acc.setCurrency(currr, 990);
+        Account accTrue = new Account("Vasia");
+        currr.setCurCurrency(1);
+        accTrue.setCurrency(currr, 100);
+        currr.setCurCurrency(2);
+        accTrue.setCurrency(currr, 990);
+        HashMap<String, Integer> tmpBal = accTrue.getCurBalance();
+        //Здесь сравниваем разные значения
+        Assertions.assertNotSame(accTrue.getCurBalance(), accTrue.getCurBalance());
+        //Тут из кеша приходит один и тотже объект
+        Assertions.assertTrue(acc.getCurBalance()== acc.getCurBalance());
     }
 }
 

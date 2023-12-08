@@ -19,7 +19,7 @@ public class UtilsCashe {
 
 }
 class AccountWrapper implements InvocationHandler {
-    Account account;
+    private Account account;
 
     private HashMap<String, Object> cashHistory = new HashMap<>();
 
@@ -36,14 +36,13 @@ class AccountWrapper implements InvocationHandler {
             }
             else{
                 this.cashHistory.put(method.getName(), method.invoke(account, args));
-                return method.invoke(account, args);
+                return this.cashHistory.get(method.getName());
             }
         }
         if (tmp.isAnnotationPresent(Setter.class)) {
             this.cashHistory.clear();
             return method.invoke(account, args);
         }
-//        return method.invoke(account, args);
-        return null;
+        return method.invoke(account, args);
     }
 }
