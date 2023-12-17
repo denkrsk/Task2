@@ -12,11 +12,11 @@ public class Account implements Getable{
     public Account(String name) {
         setName(name);
     }
-    @Cashe
+    @Cashe(1000)
     public String getName() {
         return name;
     }
-    @Setter
+    @Mutator
     public void setName(String name) {
         if (name == null | name.equals("")) throw new IllegalArgumentException("Имя не может быть пустым.");
         String oldName = this.name;
@@ -24,11 +24,11 @@ public class Account implements Getable{
         this.name = name;
 
     }
-    @Cashe
+    @Cashe(1000)
     public HashMap<String, Integer> getCurBalance() {
         return new HashMap<>(curBalance);
     }
-    @Setter
+    @Mutator
     public void setCurrency(Currency nameCur, Integer bal) {
 
         if (bal < 0) throw new IllegalArgumentException("Баланс валюты не может быть отрицательным.");

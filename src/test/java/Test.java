@@ -88,8 +88,8 @@ public class Test {
 
     @org.junit.jupiter.api.Test
     @DisplayName("Проверка UtilsCash на корректность")
-    public void  testUtilsCash(){
-        Getable acc = UtilsCashe.casheU(new Account("Vasia"));
+    public void  testUtilsCash() throws ClassNotFoundException {
+        Getable acc = UtilsCashe.cashe(new Account("Vasia"));
         acc.getName();
         acc.setName("Dima");
         String tmp = acc.getName();
@@ -98,8 +98,8 @@ public class Test {
     }
     @org.junit.jupiter.api.Test
     @DisplayName("Проверка UtilsCash на корректность кеша")
-    public void  testUtilsCashEq(){
-        Getable acc = UtilsCashe.casheU(new Account("Vasia"));
+    public void  testUtilsCashEq() throws ClassNotFoundException {
+        Getable acc = UtilsCashe.cashe(new Account("Vasia"));
         Currency currr = new Currency();
         acc.setCurrency(currr, 100);
         currr.setCurCurrency(2);
