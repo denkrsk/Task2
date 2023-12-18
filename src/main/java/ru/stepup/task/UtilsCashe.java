@@ -38,28 +38,25 @@ class CashHandler implements InvocationHandler, Runnable {
         this.object = object;
     }
 
-    public void setCashHistory(HashMap<MethodPar, Pair> cashHistory) throws InterruptedException {
+    public synchronized void setCashHistory(HashMap<MethodPar, Pair> cashHistory) throws InterruptedException {
         this.cashHistory = cashHistory;
-        System.out.println("Clear");
+        wait();
     }
 
-    public synchronized void casheClear() throws InterruptedException {
-        System.out.println("Carbage");
+    public void casheClear() throws InterruptedException {
         boolean needCl = false;
         HashMap<MethodPar, Pair> tmpCash = new HashMap<>(this.cashHistory);
         Iterator<Map.Entry<MethodPar, Pair>> itr = tmpCash.entrySet().iterator();
         while (itr.hasNext()) {
             Map.Entry<MethodPar, Pair> entry = itr.next();
             Pair pair = entry.getValue();
-            if (pair.timeLife > Instant.now().toEpochMilli()) {
+            if (pair.timeLife < Instant.now().toEpochMilli()) {
                 itr.remove();
                 needCl = true;
             }
         }
-
 //Меняем кэш если было что то для удаления
         if (needCl) setCashHistory(tmpCash);
-        wait();
     }
 
     public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -71,18 +68,15 @@ class CashHandler implements InvocationHandler, Runnable {
         if (tmp.isAnnotationPresent(Cashe.class)) timeLife = inst.plusMillis(cashe.value()).toEpochMilli();
         if (tmp.isAnnotationPresent(Mutator.class)) timeLife = inst.plusMillis(mutator.value()).toEpochMilli();
 
-//        String methodPar = new MethodPar(method, args).getKeyMP();
         MethodPar methodPar = new MethodPar(method, args);
 
         if (tmp.isAnnotationPresent(Cashe.class) | tmp.isAnnotationPresent(Mutator.class)) {
             if (this.cashHistory.containsKey(methodPar)) {
-                System.out.println("Cash put");
                 this.cashHistory.get(methodPar).timeLife = timeLife;
                 return this.cashHistory.get(methodPar).obj;
 
 
             } else {
-                System.out.println("real met");
                 this.cashHistory.put(methodPar, new Pair(method.invoke(object, args), timeLife));
                 notify();
                 return this.cashHistory.get(methodPar).obj;
@@ -135,18 +129,26 @@ class MethodPar {
         this.met = met;
         this.lastPar = lastPar;
     }
-    public String getKeyMP(){
+
+    public String getKeyMP() {
         if (this.lastPar == null) return this.met.getName();
 
         return this.met.getName() + Arrays.toString(this.lastPar);
     }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(met);
+        result = 31 * result + Arrays.hashCode(lastPar);
+        return result;
+    }
+
     @Override
     public boolean equals(Object o) {
-        System.out.println("equals");
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodPar methodPar = (MethodPar) o;
-        if (methodPar.lastPar == null & Objects.equals(met, methodPar.met)) return true;
+        if (methodPar.lastPar == null && this.lastPar == null) return Objects.equals(met, methodPar.met);
         return Objects.equals(met, methodPar.met) && Arrays.equals(lastPar, methodPar.lastPar);
     }
 

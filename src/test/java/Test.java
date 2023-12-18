@@ -2,6 +2,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import ru.stepup.task.*;
 
+import java.time.Instant;
 import java.util.HashMap;
 
 public class Test {
@@ -114,6 +115,26 @@ public class Test {
         Assertions.assertNotSame(accTrue.getCurBalance(), accTrue.getCurBalance());
         //Тут из кеша приходит один и тотже объект
         Assertions.assertTrue(acc.getCurBalance()== acc.getCurBalance());
+    }
+    @org.junit.jupiter.api.Test
+    @DisplayName("Проверка UtilsCash очистка кеша")
+    public void  testUtilsCashCl() throws InterruptedException {
+        Instant inst = Instant.now();
+        Getable acc = UtilsCashe.cashe(new Account("Vasia"));
+        for (int i =0; i < 40; i++){
+            acc.setName("Vasia" + i);
+        }
+//        время работы без очистки кеша
+        long firstTime = Instant.now().toEpochMilli() - inst.toEpochMilli();
+//        ждем 1000 мсек и заполняем кеш, чтоб сработала очистка
+        Thread.sleep(1000);
+        inst = Instant.now();
+        for (int i =0; i < 40; i++){
+            acc.setName("Vasia" + i);
+        }
+//        System.out.println( Instant.now().toEpochMilli() - inst.toEpochMilli());
+
+        Assertions.assertTrue(firstTime >= (Instant.now().toEpochMilli() - inst.toEpochMilli()));
     }
 }
 
