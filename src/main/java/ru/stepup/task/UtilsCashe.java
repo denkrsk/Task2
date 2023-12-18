@@ -38,12 +38,11 @@ class CashHandler implements InvocationHandler, Runnable {
         this.object = object;
     }
 
-    public synchronized void setCashHistory(HashMap<MethodPar, Pair> cashHistory) throws InterruptedException {
+    public void setCashHistory(HashMap<MethodPar, Pair> cashHistory) {
         this.cashHistory = cashHistory;
-        wait();
     }
 
-    public void casheClear() throws InterruptedException {
+    public synchronized void casheClear() throws InterruptedException {
         boolean needCl = false;
         HashMap<MethodPar, Pair> tmpCash = new HashMap<>(this.cashHistory);
         Iterator<Map.Entry<MethodPar, Pair>> itr = tmpCash.entrySet().iterator();
@@ -57,6 +56,8 @@ class CashHandler implements InvocationHandler, Runnable {
         }
 //Меняем кэш если было что то для удаления
         if (needCl) setCashHistory(tmpCash);
+
+        wait();
     }
 
     public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
