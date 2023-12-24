@@ -31,36 +31,32 @@ public class UtilsCashe {
 
 class CashHandler implements InvocationHandler, Runnable {
     private Object object;
-
+    private boolean flCasheClear = false;
     public HashMap<MethodPar, Pair> cashHistory = new HashMap<>();
 
     public CashHandler(Object object) {
         this.object = object;
     }
 
-    public void setCashHistory(HashMap<MethodPar, Pair> cashHistory) {
-        this.cashHistory = cashHistory;
-    }
+    public void casheClear() throws InterruptedException {
 
-    public synchronized void casheClear() throws InterruptedException {
-        boolean needCl = false;
-        HashMap<MethodPar, Pair> tmpCash = new HashMap<>(this.cashHistory);
-        Iterator<Map.Entry<MethodPar, Pair>> itr = tmpCash.entrySet().iterator();
+        Iterator<Map.Entry<MethodPar, Pair>> itr = cashHistory.entrySet().iterator();
         while (itr.hasNext()) {
             Map.Entry<MethodPar, Pair> entry = itr.next();
             Pair pair = entry.getValue();
             if (pair.timeLife < Instant.now().toEpochMilli()) {
-                itr.remove();
-                needCl = true;
+                synchronized (this) {
+                    itr.remove();
+                }
+
             }
         }
-//Меняем кэш если было что то для удаления
-        if (needCl) setCashHistory(tmpCash);
 
-        wait();
+        flCasheClear = false;
+
     }
 
-    public synchronized Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         Method tmp = object.getClass().getDeclaredMethod(method.getName(), method.getParameterTypes());
         Cashe cashe = (Cashe) tmp.getAnnotation(Cashe.class);
         Mutator mutator = tmp.getAnnotation(Mutator.class);
@@ -72,24 +68,25 @@ class CashHandler implements InvocationHandler, Runnable {
         MethodPar methodPar = new MethodPar(method, args);
 
         if (tmp.isAnnotationPresent(Cashe.class) | tmp.isAnnotationPresent(Mutator.class)) {
-            if (this.cashHistory.containsKey(methodPar)) {
-                this.cashHistory.get(methodPar).timeLife = timeLife;
-                return this.cashHistory.get(methodPar).obj;
 
+                if (this.cashHistory.containsKey(methodPar)) {
+                    synchronized (this) {
+                        this.cashHistory.get(methodPar).timeLife = timeLife;
+                    }
+                    flCasheClear = true;
+                    return this.cashHistory.get(methodPar).obj;
 
-            } else {
-                this.cashHistory.put(methodPar, new Pair(method.invoke(object, args), timeLife));
-                notify();
-                return this.cashHistory.get(methodPar).obj;
-            }
+                } else {
+                    Pair tmpPair = new Pair(method.invoke(object, args), timeLife);
+                    synchronized (this) {
+                        this.cashHistory.put(methodPar, tmpPair);
+                    }
+                    flCasheClear = true;
+                    return tmpPair.obj;
+                }
+
         }
-//        if (tmp.isAnnotationPresent(Mutator.class)) {
-////            this.cashHistory.clear();
-//            System.out.println("Mutator met");
-//            inst = Instant.now();
-//            this.cashHistory.put(idx, new Pair(method.invoke(object, args), inst.plusMillis(mutator.value()).toEpochMilli()));
-//            return method.invoke(object, args);
-//        }
+
         return method.invoke(object, args);
     }
 
@@ -97,12 +94,9 @@ class CashHandler implements InvocationHandler, Runnable {
     public void run() {
         while (!Thread.interrupted()) {
             try {
-                casheClear();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+                if (flCasheClear)
+                    casheClear();
 
-            try {
                 TimeUnit.MILLISECONDS.sleep(300);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
